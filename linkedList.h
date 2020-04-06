@@ -1,72 +1,65 @@
-struct Node 
+struct Node
 {
-    int start;
-    int end;
+    void* start;	//to point to memory allocated
+    int size;
+    int status;		//to indicate whether that block is free(0) or allocated(1)
     struct Node* link;
 };
 
 struct Node *head = NULL;
 
-struct Node* New(int s,int e)
+struct Node* New(int sz)
 {
     struct Node *temp = (struct Node*)malloc(sizeof(struct Node));
-    temp->start=s;
-    temp->end=e;
+    temp->start=NULL;
+    temp->size=sz;
+    temp->status=0;
     temp->link=NULL;
     return temp;
 }
 
-struct Node* insert(int s,int e)
+struct Node* insert(void *p,int e)
 {
-    struct Node* newNode= New(s,e);
-    if(head==NULL)  //empty ll
-    {
-        head = newNode;
-        return head;
-    }
+   	struct Node* newNode= New(e);
+	if(head==NULL)  //empty ll
+    	{
+		newNode -> start = p;	//here, p i the address returned by mmap
+		newNode -> status = 1;
+		head=newNode;
+		return head;
+	}
+	struct Node* temp = head;
+	while( temp->link != NULL)
+	{
+		temp = temp->link;
+	}
 
-    if(head->link==NULL)        //only one node in ll
-    {
-        if (newNode->start < head->start)
-        {
-            newNode->link=head;
-            head=newNode;
-        }
-        else
-        {
-            head->link=newNode;
-        }
-        return head;
-    }
-
-    if(newNode->start < head->start) //if smaller number than head arrives
-    {
-        newNode->link=head;
-        head=newNode;
-        return newNode;
-    }
-    struct Node *temp = head;
-    
-    while( temp->link != NULL )
-    {
-        if((newNode->start > temp->start) && (temp->link->start > newNode->start))
-        {
-            newNode->link=temp->link;
-            temp->link=newNode;
-            return newNode;
-        }
-        temp = temp->link;
-    }
-    temp->link = newNode;
-    return newNode;
+	newNode -> start = p;
+	newNode -> status = 1;
+	temp -> link = newNode ;
+	return head;
 }
 
 void traverse(struct Node *head)
 {
     struct Node *temp= head;
+    printf("\nSize Status\n");
     while(temp!=NULL)
     {
-        printf("%d %d \n",temp->start,temp->end);
+        printf("%p   %d   %d \n", temp->start , temp->size,temp->status);
         temp=temp->link;
     }
 }
+
+/*
+int main()
+{
+	insert(2);
+	insert(4);
+	insert(7);
+	insert(8);
+	insert(9);
+	traverse(head);
+}
+
+*/
