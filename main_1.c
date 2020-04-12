@@ -4,20 +4,21 @@
 #include <unistd.h>
 #include "linkedList.h"
 
+
 void *ptr=NULL;
 int allocated = 0;
 int allotted = 0;
 
 int no_pages(int bytes)    //when bytes required by a process is passed, no_pages() returns the no. of pages to be allocated for that process.
 {
-	 if(bytes % getpagesize()==0)
+         if(bytes % getpagesize()==0)
         return bytes/getpagesize();
     else
         return bytes/getpagesize()+1;
 
 }
 
-int Mem_Init(int sizeOfRegion)			// function to initialise memory to the process
+int Mem_Init(int sizeOfRegion)                  // function to initialise memory to the process
 {
     if(sizeOfRegion < 0)
     {
@@ -25,7 +26,7 @@ int Mem_Init(int sizeOfRegion)			// function to initialise memory to the process
         return 0;
     }
     int n=no_pages(sizeOfRegion);
-	int PAGESIZE = getpagesize();
+    int PAGESIZE = getpagesize();
     ptr = mmap(NULL,n*PAGESIZE,PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
     allotted=sizeOfRegion;
     if(ptr == MAP_FAILED)
@@ -36,17 +37,20 @@ int Mem_Init(int sizeOfRegion)			// function to initialise memory to the process
     return 1;
 }
 
-void *Mem_Alloc(int size)		//allocates the desirered amout of memory from the total available
+void *Mem_Alloc(int size)               //allocates the desirered amout of memory from the total available
 {
 	int req=allotted,flag=0;
+
 	if(size > 0)
 	{
-		if(head==NULL)          //if head is NULL,simply insert
-        {
+		if(head==NULL)          //checks if any part of initialised memory is allocated
+        	{
 			insert(ptr,size);
 			allocated += size;
-            return head->start;
+            		return head->start;
 		}
+
+
 		else
 		{
 			if(allocated+size <= allotted)		//Space might be available
@@ -59,19 +63,64 @@ void *Mem_Alloc(int size)		//allocates the desirered amout of memory from the to
 						if(temp->size >= size && temp->size <= req)
 						{
 							req = temp->size;
-				//			printf("\n\t %d",req);
 							flag = 1;
 						}
 					}
 					prevNode=temp;
 					temp=temp->link;
 				}
+
 				if(temp==NULL && flag == 0)           //insert node at last
-                {
-					insert(prevNode->start + prevNode->size, size);
-					allocated +=size;
-					return (prevNode->start + prevNode->size);
-                }
+                		{
+					if ( size <= (allotted - allocated))
+					{
+						struct Node* temp = head;
+						int size1;
+
+						while(temp!=NULL)
+						{
+							printf("pass");
+							size1 = 0;
+
+							if(temp->status == 0)
+							{
+								printf("\n\t  %p",temp->start);
+								struct Node* temp1 = temp,*prev1;
+								while(temp1->status == 0 && temp1!=NULL)
+								{
+									size1 += temp1->size;
+									prev1 = temp1;
+									if(size1 >= size)
+                                                                                break;
+									temp1 = temp1->link;
+								}
+								if (size1 >= size)
+								{
+									temp->link = prev1->link;
+									temp->size = size;
+									temp->status = 1;
+									allocated += size;
+									return temp->start;
+								}
+							}
+							temp = temp->link;
+						}
+					}
+
+				        if (prevNode->start + prevNode->size + size <= head->start+allotted)
+					{
+						insert(prevNode->start + prevNode->size, size);
+						allocated +=size;
+						return (prevNode->start + prevNode->size);
+					}
+
+					else
+					{
+						printf("\n Not enough space available ");
+						return NULL;
+					}
+                		}
+
 				else							// if a free memory satisfies the best fit costraint
 				{
 					struct Node* temp = head;
@@ -88,14 +137,18 @@ void *Mem_Alloc(int size)		//allocates the desirered amout of memory from the to
 					}
 				}
 			}
+
+
 			else
 			{
 				printf("\n\t Not enough space available");
+				return NULL;
 			}
 		}
 
 	}
 	else
+
 	{
 		printf("\n Bytes requested hould be positive ");
 	}
@@ -125,9 +178,9 @@ int Mem_Free(void *ptr)
 				}
 				else
 				{
-					temp->start = NULL;	//
+					//temp->start = NULL;	//
 					temp->status = 0;
-					allocated -= size_free;
+					allocated -= temp->size;
 				}
 				return 0;
 			}
@@ -179,9 +232,10 @@ int Mem_GetSize(void *p)
 		return -1;
 }
 
+
 int main()
 {
-        if ( Mem_Init(1000) ) //process requests for 1000 bytes
+        if ( Mem_Init(100) ) //process requests for 1000 bytes
         {
                 printf("\nMem_Init successful\n");
         }
@@ -190,33 +244,41 @@ int main()
                 printf("\nMem_Init failed\n");
                 return 1;
         }
-
-        void *a = Mem_Alloc(100);
-        void *b = Mem_Alloc(20);
-        void *c = Mem_Alloc(40);
-        void *d = Mem_Alloc(50);
-        void *e = Mem_Alloc(70);
-        void *f = Mem_Alloc(200);
-
-        printf("\n Initial linked list : ");
-        traverse(head);
-
-	int ret = Mem_Free(b+18);
-	printf("\n Freeing 20 linked list : ");
-	traverse(head);
-	if (ret == 0 )
-		printf("\n Memory Freed successfully ");
-	else if(ret == 1)
-		printf("\n No operation occurred ");
-	else
-		printf("\n Memory is already free ");
-
-
-	b = Mem_Alloc(18);
-	printf("\n Allotting 18 linked list : ");
-        traverse(head);
-
+	
+	void *a = Mem_Alloc(30);
+	void *f = Mem_Alloc(10);
+	void *b = Mem_Alloc(30);
+	void *c = Mem_Alloc(10);
 	printf("\n\t Total allocated memory :  %d and total allotted : %d unused : %d ",allocated,allotted,allotted - allocated);
+
+	traverse(head);
+	printf("\n");
+
+	int ret = Mem_Free(c);
+        if (ret == 0 )
+                printf("\n Memory Freed successfully ");
+        else if(ret == 1)
+                printf("\n No operation occurred ");
+        else
+                printf("\n Memory is already free ");
+
+	traverse(head);
+	printf("\n");
+
+	ret = Mem_Free(b);
+        if (ret == 0 )
+                printf("\n Memory Freed successfully ");
+        else if(ret == 1)
+                printf("\n No operation occurred ");
+        else
+                printf("\n Memory is already free ");
+
+        traverse(head);
+        printf("\n");
+
+
+	void *d = Mem_Alloc(40);
+	traverse(head);
 
 	int valid = Mem_IsValid(f+200);
 	if( valid == 1 )
