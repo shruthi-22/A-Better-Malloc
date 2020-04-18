@@ -4,10 +4,12 @@
 #include <unistd.h>
 #include "linkedList.h"
 
-
 void *ptr=NULL;
 int allocated = 0;
 int allotted = 0;
+
+void *base=NULL;	//to ensure security
+int limit;
 
 int no_pages(int bytes)    //when bytes required by a process is passed, no_pages() returns the no. of pages to be allocated for that process.
 {
@@ -17,7 +19,7 @@ int no_pages(int bytes)    //when bytes required by a process is passed, no_page
         return bytes/getpagesize()+1;
 
 }
-
+//memory allocator must call mmap only one time
 int Mem_Init(int sizeOfRegion)                  // function to initialise memory to the process
 {
     if(sizeOfRegion < 0)
@@ -28,6 +30,8 @@ int Mem_Init(int sizeOfRegion)                  // function to initialise memory
     int n=no_pages(sizeOfRegion);
     int PAGESIZE = getpagesize();
     ptr = mmap(NULL,n*PAGESIZE,PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	base=ptr;
+	limit=sizeOfRegion;
     allotted=sizeOfRegion;
     if(ptr == MAP_FAILED)
     {
@@ -150,7 +154,7 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 	else
 
 	{
-		printf("\n Bytes requested hould be positive ");
+		printf("\n Bytes requested should be positive ");
 	}
 }
 
