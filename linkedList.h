@@ -113,7 +113,7 @@ struct Node* insert_sorted(int sizeRequired)
 }
 
 
-int main()
+/*int main()
 {
 	insert_sorted(10);
 	insert_sorted(1);
@@ -121,4 +121,4 @@ int main()
 	insert_sorted(3);
 	insert_sorted(9); 
 	traverse(head1);
-}
+}*/
