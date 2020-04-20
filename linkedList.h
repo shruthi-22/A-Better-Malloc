@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <stdio.h>
 struct Node
@@ -112,13 +113,23 @@ struct Node* insert_sorted(int sizeRequired)
    }
 }
 
-
-/*int main()
+void del_node(int size)
 {
-	insert_sorted(10);
-	insert_sorted(1);
-	insert_sorted(7);
-	insert_sorted(3);
-	insert_sorted(9); 
-	traverse(head1);
-}*/
+   struct Node*temp = head1,*prev;
+   if(temp->size == size)
+   {
+	head1 = temp->link;
+	free(temp);
+	return;
+   }
+   while(temp!=NULL && temp->size!=size)
+   {
+	prev = temp;
+	temp = temp->link;
+   }
+   if(temp == NULL)
+	return;
+  prev->link = temp->link;
+  free(temp);
+
+}
