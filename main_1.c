@@ -4,12 +4,10 @@
 #include <unistd.h>
 #include "linkedList.h"
 
+
 void *ptr=NULL;
 int allocated = 0;
 int allotted = 0;
-
-void *base=NULL;	//to ensure security
-int limit;
 
 int no_pages(int bytes)    //when bytes required by a process is passed, no_pages() returns the no. of pages to be allocated for that process.
 {
@@ -19,7 +17,7 @@ int no_pages(int bytes)    //when bytes required by a process is passed, no_page
         return bytes/getpagesize()+1;
 
 }
-//memory allocator must call mmap only one time
+
 int Mem_Init(int sizeOfRegion)                  // function to initialise memory to the process
 {
     if(sizeOfRegion < 0)
@@ -30,8 +28,6 @@ int Mem_Init(int sizeOfRegion)                  // function to initialise memory
     int n=no_pages(sizeOfRegion);
     int PAGESIZE = getpagesize();
     ptr = mmap(NULL,n*PAGESIZE,PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-	base=ptr;
-	limit=sizeOfRegion;
     allotted=sizeOfRegion;
     if(ptr == MAP_FAILED)
     {
@@ -54,7 +50,6 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
             		return head->start;
 		}
 
-
 		else
 		{
 			if(allocated+size <= allotted)		//Space might be available
@@ -73,7 +68,6 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 					prevNode=temp;
 					temp=temp->link;
 				}
-
 				if(temp==NULL && flag == 0)           //insert node at last
                 		{
 					if ( size <= (allotted - allocated))
@@ -83,12 +77,10 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 
 						while(temp!=NULL)
 						{
-							printf("pass");
 							size1 = 0;
 
 							if(temp->status == 0)
 							{
-								printf("\n\t  %p",temp->start);
 								struct Node* temp1 = temp,*prev1;
 								while(temp1->status == 0 && temp1!=NULL)
 								{
@@ -110,7 +102,6 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 							temp = temp->link;
 						}
 					}
-
 				        if (prevNode->start + prevNode->size + size <= head->start+allotted)
 					{
 						insert(prevNode->start + prevNode->size, size);
@@ -120,6 +111,7 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 
 					else
 					{
+						insert_sorted(size);
 						printf("\n Not enough space available ");
 						return NULL;
 					}
@@ -130,7 +122,14 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 					struct Node* temp = head;
 					while(temp!=NULL)
 					{
-						if(temp->link->size == req)
+						if(temp == head && temp->size == req)
+						{
+							temp->status = 1;
+                                                        allocated += temp->size;
+                                                        return temp->start;
+
+						}
+						else if(temp->link->size == req)
 						{
 							temp->link->start = temp->start + temp->size;
 							temp->link->status = 1;
@@ -141,10 +140,9 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 					}
 				}
 			}
-
-
 			else
 			{
+				insert_sorted(size);
 				printf("\n\t Not enough space available");
 				return NULL;
 			}
@@ -154,7 +152,7 @@ void *Mem_Alloc(int size)               //allocates the desirered amout of memor
 	else
 
 	{
-		printf("\n Bytes requested should be positive ");
+		printf("\n Bytes requested hould be positive ");
 	}
 }
 
@@ -170,7 +168,6 @@ int Mem_Free(void *ptr)
 				int s1= (unsigned int*)ptr;
 				int s2= (unsigned int*)temp->start;
 				int size_free= s1-s2;
-				//printf("%d  %u  %u",size_free,ptr,temp->start);
 				if(size_free != 0)					//checks if the given pointer points to base addr or intermedite address
 				{
 					struct Node* N = New(0);
@@ -182,7 +179,6 @@ int Mem_Free(void *ptr)
 				}
 				else
 				{
-					//temp->start = NULL;	//
 					temp->status = 0;
 					allocated -= temp->size;
 				}
@@ -197,6 +193,47 @@ int Mem_Free(void *ptr)
 	}
 	return 1;
 
+}
+
+void *Mem_Check()
+{
+	struct Node* temp = head1;
+	int available = allotted - allocated;
+	printf("%d\n",available);
+	while(temp->link!=NULL)
+	{
+		if(temp->size <= available && temp->link->size > available)
+		{
+			void *a = Mem_Alloc(temp->size);
+			 if(a != NULL)
+	                 {
+                	        del_node(temp->size);
+        	         }
+			return a; 
+		}
+		else
+		{
+			printf("\n\t No request can be satisfied");
+			return NULL;
+		}
+		temp = temp->link;
+	}
+	if(temp->size <= available)
+	{
+		 void *b = Mem_Alloc(temp->size);
+		 if(b != NULL)
+		 {
+			del_node(temp->size);
+		 }
+                 return b;
+
+	}
+	else
+	{
+		printf("\n\t No request can be satisfied");
+                return NULL;
+
+	} 
 }
 
 int Mem_IsValid(void *p)
@@ -253,6 +290,7 @@ int main()
 	void *f = Mem_Alloc(10);
 	void *b = Mem_Alloc(30);
 	void *c = Mem_Alloc(10);
+	void *w = Mem_Alloc(30);
 	printf("\n\t Total allocated memory :  %d and total allotted : %d unused : %d ",allocated,allotted,allotted - allocated);
 
 	traverse(head);
@@ -274,7 +312,7 @@ int main()
                 printf("\n Memory Freed successfully ");
         else if(ret == 1)
                 printf("\n No operation occurred ");
-        else
+        else 
                 printf("\n Memory is already free ");
 
         traverse(head);
@@ -283,8 +321,23 @@ int main()
 
 	void *d = Mem_Alloc(40);
 	traverse(head);
+	
+	ret = Mem_Free(a);
+        if (ret == 0 )
+                printf("\n Memory Freed successfully ");
+        else if(ret == 1)
+                printf("\n No operation occurred ");
+        else
+                printf("\n Memory is already free ");
+	printf("\n\t Total allocated memory :  %d and total allotted : %d unused : %d ",allocated,allotted,allotted - allocated);
+	traverse(head);
+	traverse(head1);
+	printf("\n");
+	void *s = Mem_Check();
+	traverse(head);
+	traverse(head1);
 
-	int valid = Mem_IsValid(f+200);
+/*	int valid = Mem_IsValid(f+200);
 	if( valid == 1 )
 		printf("\n\t Memory is valid ");
 	else
@@ -297,6 +350,6 @@ int main()
 	if(size == -1)
 		printf("\n Not a valid memory ");
 	else
-		printf("\n Size is : %d ",size);
-
+		printf("\n Size is : %d ",size); */
+	traverse(head1);
 }
