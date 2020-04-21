@@ -1,11 +1,4 @@
-libmem.so:	mem.c
-		gcc -c -fpic mem.c -Wall -Werror
-		gcc -shared -o libmem.so mem.o
-
-mem:	mem.c
-		rm -f mem.o
-		gcc -g mem.c -o mem
-
-clean:
-		rm -f mem.o
-		rm -f libmem.so
+gcc -c -fPIC main_1.c -o main_1.o
+gcc -shared -o libmain_1.so main_1.o
+gcc -o test demo.c -lmain_1 -L{path}
+./test
